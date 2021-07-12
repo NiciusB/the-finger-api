@@ -1,9 +1,8 @@
 const net = require('net')
-var client = new net.Socket()
 
-const FINGER_PORT = 79
+module.exports = (host, username, { timeoutMs = 2000, port = 79 } = {}) => {
+    const client = new net.Socket()
 
-module.exports = (host, username, { timeoutMs = 2000 } = {}) => {
 	let timeout
 	return new Promise((resolve, reject) => {
 		timeout = setTimeout(() => {
@@ -12,13 +11,12 @@ module.exports = (host, username, { timeoutMs = 2000 } = {}) => {
 			reject(error)
 		}, timeoutMs)
 
-		client.connect(FINGER_PORT, host, function () {
+		client.connect(port, host, function () {
 			client.write(username + '\r\n')
 		})
 
 		client.on('data', function (data) {
 			resolve(data.toString())
-			client.destroy() // kill client after server's response
 		})
 
 		client.on('error', function (err) {
@@ -32,5 +30,8 @@ module.exports = (host, username, { timeoutMs = 2000 } = {}) => {
 		})
 	}).finally(() => {
 		clearTimeout(timeout)
+        try {
+            client.destroy()
+        } catch(err) {}
 	})
 }
